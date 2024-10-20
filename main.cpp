@@ -124,7 +124,7 @@ void displayTransaction(const Transaction& tx) {
     }
     std::cout << "\n-----------------------" << std::endl;
 }
-// Function to generate a random transaction
+// Funkcija generuoti random transakcija
 Transaction generateRandomTransaction(const std::vector<User>& users) {
     Transaction tx;
     tx.txID = "TX_" + std::to_string(rand() % 10000);
@@ -167,18 +167,18 @@ public:
     bool validateTransaction(const Transaction& tx) {
         double totalInput = 0, totalOutput = 0;
         for (const auto& input : tx.inputs) {
-            if (utxos.find(input) == utxos.end()) return false; // UTXO doesn't exist
+            if (utxos.find(input) == utxos.end()) return false; // UTXO neegzistuoja
             totalInput += utxos[input].second;
         }
         for (const auto& output : tx.outputs) {
             totalOutput += /* value from output */ 0; // Placeholder, calculate from actual transaction
         }
-        return totalInput >= totalOutput; // Inputs should cover outputs
+        return totalInput >= totalOutput; // Inputu turi but daugiau nei outputu
     }
 
     void applyTransaction(const Transaction& tx) {
         for (const auto& input : tx.inputs) {
-            utxos.erase(input); // Mark input UTXOs as spent
+            utxos.erase(input); // Pazymim input UTXOs kaip isleistus
         }
         for (const auto& output : tx.outputs) {
             // Add new UTXOs
@@ -204,8 +204,8 @@ public:
         newBlock.prevBlockHash = prevHash;
         newBlock.timestamp = std::time(nullptr);
         newBlock.transactions = transactions;
-        newBlock.merkleRoot = "merkle_placeholder";  // Implement Merkle root later
-        newBlock.nonce = 0;  // Start mining
+        newBlock.merkleRoot = "merkle_placeholder";  //TODO: implementuoti markle tree
+        newBlock.nonce = 0;  // Pradine nonce reiksme
         return newBlock;
     }
 
@@ -213,32 +213,32 @@ public:
         if (!chain.empty()) {
             return chain.back().calculateHash();
         }
-        return "genesis";  // Return genesis hash if no blocks are in the chain
+        return "genesis";  // Grazinam genesis hasha jei nera daugiau bloku
     }
 
     // Mining loop for a block
     void mineBlock(Block& block) {
         int iterationCount = 0;
-        std::string targetString(block.difficultyTarget, '0'); // Create target string based on difficulty
+        std::string targetString(block.difficultyTarget, '0'); //Kuriam target stringa, priklausomai nuo sudetingumo
 
         while (true) {
             std::string hash = block.calculateHash(); // Calculate current hash
             if (hash.substr(0, block.difficultyTarget) == targetString) {
                 std::lock_guard<std::mutex> guard(mtx);
                 std::cout << "Block mined: " << hash << " with nonce: " << block.nonce << std::endl;
-                break; // Exit the loop if a valid hash is found
+                break; // Jei jokie hashai nerasti, iseinam is loopo
             }
             block.nonce++;
             iterationCount++;
 
-            // Optional: Log progress every 100000 iterations
+            // Printinam log kas 100000 iteraciju
             if (iterationCount % 100000 == 0) {
                 std::cout << "Mining iteration: " << iterationCount << " Nonce: " << block.nonce << std::endl;
             }
         }
     }
-
-    // Parallel mining using threads
+    //TODO: Implementuoti paralelini mininima
+    // Paralelinis mininima, gal bus panaudotas vėliau
     void parallelMineBlocks(std::vector<Block>& candidateBlocks) {
         std::vector<std::thread> miners;
         for (auto& block : candidateBlocks) {
