@@ -159,6 +159,101 @@ struct Block {
         std::cout << "======================" << std::endl;
     }
 };
+class UTXOPool {
+public:
+    // UTXO -> (owner, amount)
+    std::unordered_map<std::string, std::pair<std::string, double>> utxos;
+
+    bool validateTransaction(const Transaction& tx) {
+        double totalInput = 0, totalOutput = 0;
+        for (const auto& input : tx.inputs) {
+            if (utxos.find(input) == utxos.end()) return false; // UTXO doesn't exist
+            totalInput += utxos[input].second;
+        }
+        for (const auto& output : tx.outputs) {
+            totalOutput += /* value from output */ 0; // Placeholder, calculate from actual transaction
+        }
+        return totalInput >= totalOutput; // Inputs should cover outputs
+    }
+
+    void applyTransaction(const Transaction& tx) {
+        for (const auto& input : tx.inputs) {
+            utxos.erase(input); // Mark input UTXOs as spent
+        }
+        for (const auto& output : tx.outputs) {
+            // Add new UTXOs
+            utxos[output] = {tx.receiver, /* value from output */ 0}; // Placeholder, update with actual values
+        }
+    }
+};
+class Blockchain {
+private:
+    std::vector<Block> chain;
+    UTXOPool utxoPool;
+
+public:
+    void addBlock(Block block) {
+        chain.push_back(block);
+        for (const auto& tx : block.transactions) {
+            utxoPool.applyTransaction(tx);
+        }
+    }
+
+    Block createBlock(const std::vector<Transaction>& transactions, const std::string& prevHash) {
+        Block newBlock;
+        newBlock.prevBlockHash = prevHash;
+        newBlock.timestamp = std::time(nullptr);
+        newBlock.transactions = transactions;
+        newBlock.merkleRoot = "merkle_placeholder";  // Implement Merkle root later
+        newBlock.nonce = 0;  // Start mining
+        return newBlock;
+    }
+
+    std::string getLastBlockHash() const {
+        if (!chain.empty()) {
+            return chain.back().calculateHash();
+        }
+        return "genesis";  // Return genesis hash if no blocks are in the chain
+    }
+
+    // Mining loop for a block
+    void mineBlock(Block& block) {
+        int iterationCount = 0;
+        std::string targetString(block.difficultyTarget, '0'); // Create target string based on difficulty
+
+        while (true) {
+            std::string hash = block.calculateHash(); // Calculate current hash
+            if (hash.substr(0, block.difficultyTarget) == targetString) {
+                std::lock_guard<std::mutex> guard(mtx);
+                std::cout << "Block mined: " << hash << " with nonce: " << block.nonce << std::endl;
+                break; // Exit the loop if a valid hash is found
+            }
+            block.nonce++;
+            iterationCount++;
+
+            // Optional: Log progress every 100000 iterations
+            if (iterationCount % 100000 == 0) {
+                std::cout << "Mining iteration: " << iterationCount << " Nonce: " << block.nonce << std::endl;
+            }
+        }
+    }
+
+    // Parallel mining using threads
+    void parallelMineBlocks(std::vector<Block>& candidateBlocks) {
+        std::vector<std::thread> miners;
+        for (auto& block : candidateBlocks) {
+            miners.emplace_back([this, &block]() {
+                mineBlock(block);
+            });
+        }
+        for (auto& miner : miners) {
+            miner.join();
+        }
+    }
+};
+
+// UTXO pool'o klase
+
 int main() {
     srand(static_cast<unsigned>(time(0))); // Seed random skaiciu generatoriui
 
@@ -170,11 +265,17 @@ int main() {
     }
 
     // Step 2: generuojam atsitiktines transakcijas
-    const int numTransactions = 10;
+    const int numTransactions = 100;
     std::vector<Transaction> transactions;
     for (int i = 0; i < numTransactions; i++) {
         transactions.push_back(generateRandomTransaction(users));
     }
-
+    // Step 3: Sukuriam blockchain ir candidate blokus
+    Blockchain blockchain;
+    std::vector<Block> candidateBlocks(5); // Create 5 candidate blocks
+    for (int i = 0; i < 5; ++i) {
+        candidateBlocks[i] = blockchain.createBlock(transactions, blockchain.getLastBlockHash());
+        candidateBlocks[i].difficultyTarget = 1; // mazas sudetingumas testavimui
+    }
     return 0;
 }
