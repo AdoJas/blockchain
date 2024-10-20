@@ -12,6 +12,8 @@
 #include <mutex>
 #include <unordered_set>
 
+//TODO: sutvarkyti funkcijas strukturas ir klases i jiems skirtus failus
+
 std::mutex mtx;
 
 const int HASH_SIZE = 32; // hashArray dydis baitais
