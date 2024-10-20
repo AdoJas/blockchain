@@ -10,11 +10,12 @@
 #include <iomanip>
 #include <array>
 #include <mutex>
+#include <unordered_set>
 
 std::mutex mtx;
 
 const int HASH_SIZE = 32; // hashArray dydis baitais
-
+std::unordered_set<std::string> existingPublicKeys;
 // 1 uzduoties hash funkcija
 void computeHashFunction(unsigned int x, std::array<uint8_t, HASH_SIZE>& hashArray, unsigned int& previousY) {
     unsigned int p1 = 2654435761; // Knuth's multiplication constant
@@ -75,8 +76,10 @@ struct User {
 User generateRandomUser() {
     User user;
     user.name = "User_" + std::to_string(rand() % 1000);
-    user.publicKey = "PublicKey_" + std::to_string(rand() % 1000);
-    user.balance = static_cast<double>(rand() % 1000) / 10; // Random balance
+    do {
+        user.publicKey = "PublicKey_" + std::to_string(rand() % 10000); // generuojam atsitiktini public key
+    } while (existingPublicKeys.find(user.publicKey) != existingPublicKeys.end());
+    user.balance = static_cast<double>(rand() % 999901) + 100; // balanso reiksme nuo 100 iki 10^6 valiutos vienetu
     return user;
 }
 
