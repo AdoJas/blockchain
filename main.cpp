@@ -16,6 +16,7 @@ std::mutex mtx;
 
 const int HASH_SIZE = 32; // hashArray dydis baitais
 std::unordered_set<std::string> existingPublicKeys;
+
 // 1 uzduoties hash funkcija
 void computeHashFunction(unsigned int x, std::array<uint8_t, HASH_SIZE>& hashArray, unsigned int& previousY) {
     unsigned int p1 = 2654435761; // Knuth's multiplication constant
@@ -67,6 +68,21 @@ std::string generateCustomHash(const std::string& input) {
     return toHexString(hashArray);
 }
 
+//Random public key generavimo funkcija
+std::string generateRandomPublicKey(int length = 64) {
+    // Use random_device and mt19937 for better randomness
+    std::random_device rd;
+    std::mt19937 mt(rd());   // Mersenne Twister generatorius, random skaiciu generavimui
+    std::uniform_int_distribution<int> dist(0, 255); // Random skaiciu generavimas nuo 0 iki 255
+
+    std::ostringstream oss;
+    for (int i = 0; i < length; ++i) {
+        int byte = dist(mt); //Generuoja random baita ir pavercia i hex reiksme
+        oss << std::setw(2) << std::setfill('0') << std::hex << byte;
+    }
+    return oss.str();
+}
+
 // User struktura
 struct User {
     std::string name;
@@ -77,7 +93,7 @@ User generateRandomUser() {
     User user;
     user.name = "User_" + std::to_string(rand() % 1000);
     do {
-        user.publicKey = "PublicKey_" + std::to_string(rand() % 10000); // generuojam atsitiktini public key
+        user.publicKey = generateRandomPublicKey();
     } while (existingPublicKeys.find(user.publicKey) != existingPublicKeys.end());
     user.balance = static_cast<double>(rand() % 999901) + 100; // balanso reiksme nuo 100 iki 10^6 valiutos vienetu
     return user;
@@ -121,7 +137,28 @@ Transaction generateRandomTransaction(const std::vector<User>& users) {
     tx.outputs.push_back("UTXO_" + std::to_string(rand() % 10000)); // Add new UTXO
     return tx;
 }
+struct Block {
+    std::string prevBlockHash;
+    std::string merkleRoot;
+    time_t timestamp;
+    int nonce;
+    int difficultyTarget;
+    std::vector<Transaction> transactions;
 
+    std::string calculateHash() const {
+        std::stringstream ss;
+        ss << prevBlockHash << merkleRoot << timestamp << nonce << difficultyTarget;
+        return generateCustomHash(ss.str());
+    }
+    // Metodas isvedantis sio bloko transakcijas i konsole
+    void displayTransactions() const {
+        std::cout << "Block Transactions:" << std::endl;
+        for (const auto& tx : transactions) {
+            displayTransaction(tx);
+        }
+        std::cout << "======================" << std::endl;
+    }
+};
 int main() {
     srand(static_cast<unsigned>(time(0))); // Seed random skaiciu generatoriui
 
