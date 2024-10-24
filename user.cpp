@@ -3,6 +3,7 @@
 //
 #include "user.h"
 std::unordered_set<std::string> existingPublicKeys;
+
 //Random public key generavimo funkcija
 std::string generateRandomPublicKey() {
     // Use random_device and mt19937 for better randomness
