@@ -20,6 +20,10 @@ void displayTransaction(const Transaction& tx) {
 }
 
 void transactionGeneration(int tranCount, const std::vector<User>& users, std::vector<Transaction>& transactions) {
+    if (users.size() < 2) {
+        std::cerr << "Error: Not enough users to generate transactions." << std::endl;
+        return;
+    }
     for (int i = 0; i < tranCount; ++i) {
         Transaction tx = generateRandomTransaction(users);
         transactions.push_back(tx);
@@ -82,7 +86,7 @@ bool UTXOPool::validateTransaction(const Transaction& tx) {
         //std::cout << "Invalid transaction: Insufficient input balance." << std::endl;
         return false;
     }
-
+    displayTransaction(tx);
     return true;
 }
 

@@ -9,6 +9,7 @@
 #include <sstream>
 #include <iomanip>
 #include <unordered_set>
+#include <iostream>
 
 extern std::unordered_set<std::string> existingPublicKeys;
 
@@ -22,6 +23,6 @@ struct User {
 
 // Declaration of generateRandomUser
 User generateRandomUser();
-
-void randomUserGeneration(int userNumber, std::vector<User> users);
+User printData(User user);
+void randomUserGeneration(int userNumber, std::vector<User>& users);
 #endif //BLOCKCHAIN_USER_H
