@@ -6,7 +6,6 @@ std::unordered_set<std::string> existingPublicKeys;
 
 //Random public key generavimo funkcija
 std::string generateRandomPublicKey() {
-    // Use random_device and mt19937 for better randomness
     std::random_device rd;
     std::mt19937 mt(rd());   // Mersenne Twister generatorius, random skaiciu generavimui
     std::uniform_int_distribution<int> dist(0, 255); // Random skaiciu generavimas nuo 0 iki 255
@@ -18,7 +17,7 @@ std::string generateRandomPublicKey() {
     }
     return oss.str();
 }
-void randomUserGeneration(int& userNumber, std::vector<User> users){
+void randomUserGeneration(int userNumber, std::vector<User> users){
     const int numUsers = 10;
     for (int i = 0; i < numUsers; i++) {
         users.push_back(generateRandomUser());

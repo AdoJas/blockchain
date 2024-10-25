@@ -1,10 +1,7 @@
-//
-// Created by adoma on 10/24/2024.
-//
-
 #include <unordered_map>
 #include "transactionUTXO.h"
 #include "user.h"
+#include "hash.h"
 
 void displayTransaction(const Transaction& tx) {
     std::cout << "Transaction ID: " << tx.txID << std::endl;
@@ -22,44 +19,90 @@ void displayTransaction(const Transaction& tx) {
     std::cout << "\n-----------------------" << std::endl;
 }
 
-void transactionGeneration(int tranCount, std::vector<User> users, std::vector<Transaction> transactions){
-    const int numTransactions = 100;
-    for (int i = 0; i < numTransactions; i++) {
-        transactions.push_back(generateRandomTransaction(users));
-    }
-}
-
-bool UTXOPool::validateTransaction(const Transaction& tx) {
-    double totalInput = 0, totalOutput = 0;
-    for (const auto& input : tx.inputs) {
-        if (utxos.find(input) == utxos.end()) return false; // UTXO neegzistuoja
-        totalInput += utxos[input].second;
-    }
-    for (const auto& output : tx.outputs) {
-        totalOutput += /* value from output */ 0; // Placeholder, calculate from actual transaction
-    }
-    return totalInput >= totalOutput; // Inputu turi but daugiau nei outputu
-}
-
-void UTXOPool::applyTransaction(const Transaction& tx) {
-    for (const auto& input : tx.inputs) {
-        utxos.erase(input); // Pazymim input UTXOs kaip isleistus
-    }
-    for (const auto& output : tx.outputs) {
-        // Add new UTXOs
-        utxos[output] = {tx.receiver, /* value from output */ 0}; // Placeholder, update with actual values
+void transactionGeneration(int tranCount, const std::vector<User>& users, std::vector<Transaction>& transactions) {
+    for (int i = 0; i < tranCount; ++i) {
+        Transaction tx = generateRandomTransaction(users);
+        transactions.push_back(tx);
     }
 }
 
 Transaction generateRandomTransaction(const std::vector<User>& users) {
+    //Parenkam random siunteja ir gaveja
+    int senderIndex = std::rand() % users.size();
+    int receiverIndex;
+    do {
+        receiverIndex = std::rand() % users.size();
+    } while (receiverIndex == senderIndex); // Patikrinam, ar siuntejas ir gavejas skirtingi
+
+    double amount = (std::rand() % 99999) / 100.0 + 1.0;  // Random kiekis nuo 100 iki milijono
+
     Transaction tx;
-    tx.txID = "TX_" + std::to_string(rand() % 10000);
-    const auto& sender = users[rand() % users.size()];
-    const auto& receiver = users[rand() % users.size()];
-    tx.sender = sender.publicKey;
-    tx.receiver = receiver.publicKey;
-    tx.amount = static_cast<double>(rand() % 100) + 0.01; // Random amount
-    tx.inputs.push_back("UTXO_" + std::to_string(rand() % 10000)); // Add random UTXO
-    tx.outputs.push_back("UTXO_" + std::to_string(rand() % 10000)); // Add new UTXO
+    tx.sender = users[senderIndex].publicKey;
+    tx.receiver = users[receiverIndex].publicKey;
+    tx.amount = amount;
+
+    // Unikalus transakciju id
+    std::string txData = tx.sender + tx.receiver + std::to_string(tx.amount);
+    tx.txID = generateCustomHash(txData);
+
     return tx;
+}
+
+bool UTXOPool::validateTransaction(const Transaction& tx) {
+    double inputTotal = 0.0;
+    double outputTotal = 0.0;
+
+    // 1. tikrina ar utxo yra pool'e
+    for (const auto& input : tx.inputs) {
+        auto it = utxos.find(input);
+        if (it == utxos.end()) {
+            std::cout << "Invalid transaction: Input UTXO not found in pool." << std::endl;
+            return false;
+        }
+
+        // 2. Nuosavybes patvirtinimas, ar outputas priklauso senderiui
+        if (it->second.first != tx.sender) {
+            std::cout << "Invalid transaction: UTXO ownership does not match sender." << std::endl;
+            return false;
+        }
+
+        inputTotal += it->second.second;
+    }
+    // 3. Visas output kiekis
+    for (const auto& output : tx.outputs) {
+        size_t delimiterPos = output.find(':');
+        if (delimiterPos != std::string::npos) {
+            double outputAmount = std::stod(output.substr(delimiterPos + 1));
+            outputTotal += outputAmount;
+        }
+    }
+
+    // 4. inputas didesnis nei outputas
+    if (inputTotal < outputTotal) {
+        //std::cout << "Invalid transaction: Insufficient input balance." << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+void UTXOPool::applyTransaction(const Transaction& tx) {
+    for (const auto& input : tx.inputs) {
+        utxos.erase(input);
+    }
+
+    // Pridedam naujus UTXO
+    for (const auto& output : tx.outputs) {
+        size_t delimiterPos = output.find(':');
+        if (delimiterPos != std::string::npos) {
+            std::string recipient = output.substr(0, delimiterPos);
+            double amount = std::stod(output.substr(delimiterPos + 1));
+
+            // Nauji unukalus UTXO id hashinant txID ir recipient.
+            std::string rawUTXOID = tx.txID + "_" + recipient;
+            std::string newUTXOID = generateCustomHash(rawUTXOID);
+
+            utxos[newUTXOID] = {recipient, amount};
+        }
+    }
 }

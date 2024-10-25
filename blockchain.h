@@ -3,7 +3,9 @@
 
 #include <mutex>
 #include <thread>
+#include <vector>
 #include "block.h"
+#include "transactionUTXO.h"
 
 extern std::mutex mtx;
 
@@ -17,11 +19,8 @@ public:
     Block createBlock(const std::vector<Transaction>& transactions, const std::string& prevHash);
     std::string getLastBlockHash() const;
 
-    // Mining loop for a block
     void mineBlock(Block& block);
-
-    // Parallel block mining
     void parallelMineBlocks(std::vector<Block>& candidateBlocks);
 };
 
-#endif //BLOCKCHAIN_BLOCKCHAIN_H
+#endif // BLOCKCHAIN_BLOCKCHAIN_H

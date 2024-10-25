@@ -23,5 +23,5 @@ struct User {
 // Declaration of generateRandomUser
 User generateRandomUser();
 
-void randomUserGeneration(int& userNumber, std::vector<User> users);
+void randomUserGeneration(int userNumber, std::vector<User> users);
 #endif //BLOCKCHAIN_USER_H

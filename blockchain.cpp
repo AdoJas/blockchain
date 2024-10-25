@@ -1,8 +1,8 @@
-//
-// Created by adoma on 10/24/2024.
-//
-
 #include "blockchain.h"
+#include <ctime>
+#include <iostream>
+#include <chrono>
+
 std::mutex mtx;
 
 void Blockchain::addBlock(Block block) {
@@ -11,52 +11,25 @@ void Blockchain::addBlock(Block block) {
         utxoPool.applyTransaction(tx);
     }
 }
+
 Block Blockchain::createBlock(const std::vector<Transaction>& transactions, const std::string& prevHash) {
-    Block newBlock;
-    newBlock.prevBlockHash = prevHash;
-    newBlock.timestamp = std::time(nullptr);
-    newBlock.transactions = transactions;
-    newBlock.merkleRoot = "merkle_placeholder";  //TODO: implementuoti markle tree
-    newBlock.nonce = 0;  // Pradine nonce reiksme
-    return newBlock;
+    return Block(prevHash, transactions);
 }
 
 std::string Blockchain::getLastBlockHash() const {
-    if (!chain.empty()) {
-        return chain.back().calculateHash();
-    }
-    return "genesis";  // Grazinam genesis hasha jei nera daugiau bloku
+    if (chain.empty()) return {};
+    return chain.back().getHash();
 }
 
 void Blockchain::mineBlock(Block& block) {
-    int iterationCount = 0;
-    std::string targetString(block.difficultyTarget, '0'); //Kuriam target stringa, priklausomai nuo sudetingumo
-
-    while (true) {
-        std::string hash = block.calculateHash(); // Calculate current hash
-        if (hash.substr(0, block.difficultyTarget) == targetString) {
-            std::lock_guard<std::mutex> guard(mtx);
-            std::cout << "Block mined: " << hash << " with nonce: " << block.nonce << std::endl;
-            break; // Jei jokie hashai nerasti, iseinam is loopo
-        }
-        block.nonce++;
-        iterationCount++;
-
-        // Printinam log kas 100000 iteraciju
-        if (iterationCount % 100000 == 0) {
-            std::cout << "Mining iteration: " << iterationCount << " Nonce: " << block.nonce << std::endl;
-        }
+    while (block.getHash().substr(0, 2) != "00") {
+        block.calculateHash();  // Pakeiciam tam, kad galetume ieskoti hasho
     }
 }
 
 void Blockchain::parallelMineBlocks(std::vector<Block>& candidateBlocks) {
-    std::vector<std::thread> miners;
     for (auto& block : candidateBlocks) {
-        miners.emplace_back([this, &block]() {
-            mineBlock(block);
-        });
-    }
-    for (auto& miner : miners) {
-        miner.join();
+        std::thread miner(&Blockchain::mineBlock, this, std::ref(block));
+        miner.detach();
     }
 }

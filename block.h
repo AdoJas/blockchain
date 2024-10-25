@@ -1,24 +1,31 @@
-//
-// Created by adoma on 10/20/2024.
-//
+#ifndef BLOCK_H
+#define BLOCK_H
 
-#ifndef BLOCKCHAIN_BLOCK_H
-#define BLOCKCHAIN_BLOCK_H
+#include <string>
+#include <vector>
+#include <ctime>
 #include "transactionUTXO.h"
-#include "hash.h"
 
-struct Block {
-    std::string prevBlockHash;
-    std::string merkleRoot;
-    time_t timestamp;
-    int nonce;
-    int difficultyTarget;
+class Block {
+public:
+    Block(std::string previousHash, const std::vector<Transaction>& transactions);
+
+    std::string getHash() const;
+    std::string getPreviousHash() const;
+    time_t getTimestamp() const;
+    int getVersion() const;
+
+    void displayBlockTransactions() const;
+    void calculateHash();
+    std::string hash;
     std::vector<Transaction> transactions;
 
-    std::string calculateHash() const;
-    // Metodas isvedantis sio bloko transakcijas i konsole
-    void displayTransactions() const;
+private:
+
+    std::string previousHash;
+    time_t timestamp;
+    int version;
+
 };
 
-
-#endif //BLOCKCHAIN_BLOCK_H
+#endif // BLOCK_H
