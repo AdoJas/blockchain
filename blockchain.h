@@ -6,6 +6,7 @@
 #include <vector>
 #include "block.h"
 #include "transactionUTXO.h"
+#include <algorithm>
 
 extern std::mutex mtx;
 
@@ -13,14 +14,17 @@ class Blockchain {
 private:
     std::vector<Block> chain;
     UTXOPool utxoPool;
+    int difficulty;
 
 public:
+    Blockchain(int difficultyLevel) : difficulty(difficultyLevel) {};
     void addBlock(Block block);
     Block createBlock(const std::vector<Transaction>& transactions, const std::string& prevHash);
     std::string getLastBlockHash() const;
 
     void mineBlock(Block& block);
     void parallelMineBlocks(std::vector<Block>& candidateBlocks);
+    void processTransactions(std::vector<Transaction>& transactions);
 };
 
 #endif // BLOCKCHAIN_BLOCKCHAIN_H

@@ -10,18 +10,19 @@ int main() {
     srand(static_cast<unsigned>(time(0)));
 
     std::vector<User> users;
-    randomUserGeneration(1000, users);
+    randomUserGeneration(2, users);
+
+    UTXOPool utxoPool;
+    initializeUTXOPool(users, utxoPool);
 
     std::vector<Transaction> transactions;
-    transactionGeneration(10000, users, transactions);
+    transactionGeneration(1, users, utxoPool, transactions);
 
-    Blockchain blockchain;
-    Block block = blockchain.createBlock(transactions, blockchain.getLastBlockHash());
+    int difficultyLevel = 2;
+    Blockchain blockchain(difficultyLevel);
 
-    blockchain.mineBlock(block);
-    blockchain.addBlock(block);
-
-    block.displayBlockTransactions();
+    std::cout << "Starting the mining process..." << std::endl;
+    blockchain.processTransactions(transactions);
 
     return 0;
 }

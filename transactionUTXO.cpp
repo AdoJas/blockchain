@@ -4,52 +4,89 @@
 #include "hash.h"
 
 void displayTransaction(const Transaction& tx) {
-    std::cout << "Transaction ID: " << tx.txID << std::endl;
-    std::cout << "Sender: " << tx.sender << std::endl;
-    std::cout << "Receiver: " << tx.receiver << std::endl;
-    std::cout << "Amount: " << tx.amount << std::endl;
-    std::cout << "Inputs: ";
-    for (const auto& input : tx.inputs) {
-        std::cout << input << " ";
-    }
-    std::cout << "\nOutputs: ";
-    for (const auto& output : tx.outputs) {
-        std::cout << output << " ";
-    }
-    std::cout << "\n-----------------------" << std::endl;
+    std::cout << "==================== Transaction ====================" << std::endl;
+    std::cout << "Transaction ID : " << tx.txID << std::endl;
+    std::cout << "Sender         : " << tx.sender << std::endl;
+    std::cout << "Receiver       : " << tx.receiver << std::endl;
+    std::cout << "Amount         : " << tx.amount << std::endl;
+
+    std::cout << "Inputs         : ";
+    for (const auto& input : tx.inputs) std::cout << input << " ";
+    std::cout << "\nOutputs        : ";
+    for (const auto& output : tx.outputs) std::cout << output << " ";
+    std::cout << "\n=====================================================" << std::endl;
 }
 
-void transactionGeneration(int tranCount, const std::vector<User>& users, std::vector<Transaction>& transactions) {
+void transactionGeneration(int tranCount, const std::vector<User>& users, UTXOPool& utxoPool, std::vector<Transaction>& transactions) {
     if (users.size() < 2) {
         std::cerr << "Error: Not enough users to generate transactions." << std::endl;
         return;
     }
+
     for (int i = 0; i < tranCount; ++i) {
-        Transaction tx = generateRandomTransaction(users);
-        transactions.push_back(tx);
+        Transaction tx;
+        int attempts = 0;
+        do {
+            tx = generateRandomTransaction(users, utxoPool);
+            attempts++;
+        } while ((tx.inputs.empty() || tx.outputs.empty()) && attempts < 5);
+
+        if (!tx.inputs.empty() && !tx.outputs.empty()) {
+            transactions.push_back(tx);
+        }
     }
 }
 
-Transaction generateRandomTransaction(const std::vector<User>& users) {
-    //Parenkam random siunteja ir gaveja
+Transaction generateRandomTransaction(const std::vector<User>& users, UTXOPool& utxoPool) {
     int senderIndex = std::rand() % users.size();
     int receiverIndex;
     do {
         receiverIndex = std::rand() % users.size();
-    } while (receiverIndex == senderIndex); // Patikrinam, ar siuntejas ir gavejas skirtingi
+    } while (receiverIndex == senderIndex);
 
-    double amount = (std::rand() % 99999) / 100.0 + 1.0;  // Random kiekis nuo 100 iki milijono
+    double amount = (std::rand() % 99999) / 100.0 + 1.0;
 
     Transaction tx;
     tx.sender = users[senderIndex].publicKey;
     tx.receiver = users[receiverIndex].publicKey;
     tx.amount = amount;
 
-    // Unikalus transakciju id
     std::string txData = tx.sender + tx.receiver + std::to_string(tx.amount);
     tx.txID = generateCustomHash(txData);
 
+    double inputTotal = 0.0;
+    for (const auto& [utxoID, utxo] : utxoPool.utxos) {
+        if (utxo.first == tx.sender && inputTotal < amount) {
+            tx.inputs.push_back(utxoID);
+            inputTotal += utxo.second;
+        }
+    }
+
+    if (inputTotal < amount) {
+        tx.inputs.clear();
+        tx.outputs.clear();
+    } else {
+        tx.outputs.push_back(tx.receiver + ":" + std::to_string(amount));
+        if (inputTotal > amount) {
+            double change = inputTotal - amount;
+            tx.outputs.push_back(tx.sender + ":" + std::to_string(change));
+        }
+    }
+
     return tx;
+}
+
+void initializeUTXOPool(const std::vector<User>& users, UTXOPool& utxoPool) {
+    for (const auto& user : users) {
+        // Naudojame pradini user balansa
+        double userBalance = user.balance;
+
+        // Sukuriam UTXO ID hashinant user public key ir "initial" zodi
+        std::string utxoID = generateCustomHash(user.publicKey + "_initial");
+
+        // Pridedam sukurta UTXO i pool'a
+        utxoPool.utxos[utxoID] = {user.publicKey, userBalance};
+    }
 }
 
 bool UTXOPool::validateTransaction(const Transaction& tx) {
@@ -83,10 +120,10 @@ bool UTXOPool::validateTransaction(const Transaction& tx) {
 
     // 4. inputas didesnis nei outputas
     if (inputTotal < outputTotal) {
-        //std::cout << "Invalid transaction: Insufficient input balance." << std::endl;
+        std::cout << "Invalid transaction: Insufficient input balance." << std::endl;
         return false;
     }
-    displayTransaction(tx);
+    //displayTransaction(tx);
     return true;
 }
 

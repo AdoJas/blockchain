@@ -6,11 +6,11 @@ std::unordered_set<std::string> existingPublicKeys;
 
 //Random public key generavimo funkcija
 std::string generateRandomPublicKey() {
-    static std::mt19937 mt(static_cast<unsigned>(std::time(nullptr)));  // Seed with time to vary each run
+    static std::mt19937 mt(static_cast<unsigned>(std::time(nullptr)));
     std::uniform_int_distribution<int> dist(0, 255);
 
     std::ostringstream oss;
-    for (int i = 0; i < 64; ++i) {
+    for (int i = 0; i < 32; ++i) {
         int byte = dist(mt);
         oss << std::setw(2) << std::setfill('0') << std::hex << byte;
     }
@@ -20,15 +20,15 @@ std::string generateRandomPublicKey() {
 void randomUserGeneration(int userNumber, std::vector<User>& users){
     for (int i = 0; i < userNumber; ++i) {
         User user = generateRandomUser();
-        users.push_back(user);  // Ensure this actually adds users
+        users.push_back(user);
     }
 }
 User generateRandomUser() {
-    static int userNumber = 0;
+    static int userNumber = 1;
 
     if (userNumber == 0 && !existingPublicKeys.empty()) {
         for (const auto& key : existingPublicKeys) {
-            if (key.find("User_") == 0) {
+            if (key.find("User_") == 1) {
                 int existingNumber = std::stoi(key.substr(5));
                 if (existingNumber >= userNumber) {
                     userNumber = existingNumber + 1;

@@ -21,7 +21,6 @@ struct User {
     double balance;
 };
 
-// Declaration of generateRandomUser
 User generateRandomUser();
 User printData(User user);
 void randomUserGeneration(int userNumber, std::vector<User>& users);

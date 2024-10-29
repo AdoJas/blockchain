@@ -18,18 +18,21 @@ struct Transaction {
 
 void displayTransaction(const Transaction& tx);
 
+
 class UTXOPool {
 public:
     std::unordered_map<std::string, std::pair<std::string, double>> utxos; // Priskiriam UTXO ID - (savininkas, suma)
 
     bool validateTransaction(const Transaction& tx);
     void applyTransaction(const Transaction& tx);
+
 };
 
+void initializeUTXOPool(const std::vector<User>& users, UTXOPool& utxoPool);
 // Generuojam random pervedimus
-Transaction generateRandomTransaction(const std::vector<User>& users);
+Transaction generateRandomTransaction(const std::vector<User>& users, UTXOPool& utxoPool);
 
 // Bulk set transakcijos
-void transactionGeneration(int tranCount, const std::vector<User>& users, std::vector<Transaction>& transactions);
+void transactionGeneration(int tranCount, const std::vector<User>& users, UTXOPool& utxoPool, std::vector<Transaction>& transactions);
 
 #endif // BLOCKCHAIN_TRANSACTIONUTXO_H
