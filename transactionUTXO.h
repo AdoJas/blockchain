@@ -33,9 +33,12 @@ void displayTransaction(const Transaction& tx);
 class UTXOPool {
 public:
     bool validateTransaction(const Transaction& tx) const;
+    bool hasSufficientBalance(const std::string& owner, double amount) const;
+    static bool verifyTransactionHash(const Transaction& tx);
     void applyTransaction(const Transaction& tx);
     static void initializePool(const std::vector<User>& users, UTXOPool& utxoPool);
     std::vector<std::pair<std::string, double>> getUTXOsForOwner(const std::string& owner) const;
+
 private:
     std::unordered_map<std::string, std::pair<std::string, double>> utxos;
 };

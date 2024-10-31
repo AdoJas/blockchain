@@ -83,6 +83,14 @@ void UTXOPool::initializePool(const std::vector<User>& users, UTXOPool& utxoPool
 }
 
 bool UTXOPool::validateTransaction(const Transaction& tx) const {
+    if (!hasSufficientBalance(tx.getSender(), tx.getAmount())) {
+        std::cout << "Insufficient balance for transaction.\n";
+        return false;
+    }
+    if (!verifyTransactionHash(tx)) {
+        std::cout << "Transaction hash verification failed.\n";
+        return false;
+    }
     double inputTotal = 0.0;
     double outputTotal = 0.0;
 
@@ -117,4 +125,18 @@ void UTXOPool::applyTransaction(const Transaction& tx) {
             utxos[generateCustomHash(rawUTXOID)] = {recipient, amount};
         }
     }
+}
+bool UTXOPool::hasSufficientBalance(const std::string& owner, double amount) const {
+    double totalBalance = 0.0;
+    for (const auto& [utxoID, utxo] : utxos) {
+        if (utxo.first == owner) {
+            totalBalance += utxo.second;
+            if (totalBalance >= amount) return true;
+        }
+    }
+    return false;
+}
+bool UTXOPool::verifyTransactionHash(const Transaction& tx) {
+    std::string txData = tx.getSender() + tx.getReceiver() + std::to_string(tx.getAmount());
+    return tx.getTxID() == generateCustomHash(txData);
 }
