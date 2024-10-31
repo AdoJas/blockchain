@@ -22,26 +22,25 @@ int main() {
     std::vector<User> users;
     UTXOPool utxoPool;
     std::vector<Transaction> transactions;
-    Blockchain blockchain(2);
+    Blockchain blockchain(3);
     while (true) {
         std::cout << "List of commands: \n"
                   << "1. user-generate\n"
-                  << "2. show-user\n" //Padaryt
+                  << "2. show-user\n"
                   << "3. transaction-generate\n"
-                  << "4. show-transaction-in-pool\n" //Padaryt
+                  << "4. show-transaction-in-pool\n"
                   << "5. mine-block\n"
-                  << "6. show-specific-block\n" //Padaryt
-                  << "7. show-transaction-specific-block\n" // Padaryt
+                  << "6. show-specific-block\n"
+                  << "7. show-transaction-specific-block\n"
                   << "8. display-current-block\n"
-                  << "9. display-all-transactions\n"
-                  << "10. display-blockchain\n"
-                  << "11. exit\n";
+                  << "9. display-blockchain\n"
+                  << "10. exit\n";
 
-        std::cout << "Enter a command (number 1-11): ";
+        std::cout << "Enter a command (number 1-10): ";
         std::string command;
         std::getline(std::cin, command);
 
-        while (stoi(command) < 1 || stoi(command) > 11) {
+        while (stoi(command) < 1 || stoi(command) > 10) {
             std::cout << "------------------------------------------------\n";
             std::cout << " Invalid command. Please enter a valid command: ";
 
@@ -49,7 +48,7 @@ int main() {
             std::cout << "------------------------------------------------\n";
         }
 
-        if (command == "11") {
+        if (command == "10") {
             break;
         }
 
@@ -77,11 +76,11 @@ int main() {
                 std::cin.ignore();
                 if(userNumber == 0){
                     for(const auto & user : users){
-                        printData(user);
+                        user.display();
                     }
                     break;
                 }
-                printData(users[userNumber-1]);
+                users[userNumber-1].display();
                 break;
             }
             case 3: {
@@ -107,7 +106,7 @@ int main() {
 
             case 4: {  // Display transactions in pool
                 if (transactions.empty()) {
-                    std::cout << "Error: No transactions available to display.\n";
+                    std::cout << "Error: No  transactions available to display.\n";
                     break;
                 }
                 displayAllTransactions(transactions);
@@ -182,17 +181,7 @@ int main() {
                 }
                 break;
             }
-
-
-            case 9: {
-                if (!transactions.empty()) {
-                    displayAllTransactions(transactions);
-                } else {
-                    std::cout << "No transactions to display.\n";
-                }
-                break;
-            }
-            case 10: {  // Display entire blockchain
+            case 9: {  // Display entire blockchain
                 if(blockchain.isEmpty()){
                     std::cout << "Error: No blockchain available to display.\n";
                     break;

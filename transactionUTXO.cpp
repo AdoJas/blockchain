@@ -57,8 +57,8 @@ Transaction generateRandomTransaction(const std::vector<User>& users, UTXOPool& 
     double amount = (std::rand() % 99999) / 100.0 + 1.0;
 
     Transaction tx;
-    tx.sender = users[senderIndex].publicKey;
-    tx.receiver = users[receiverIndex].publicKey;
+    tx.sender = users[senderIndex].getPublicKey();
+    tx.receiver = users[receiverIndex].getPublicKey();
     tx.amount = amount;
 
     std::string txData = tx.sender + tx.receiver + std::to_string(tx.amount);
@@ -89,13 +89,13 @@ Transaction generateRandomTransaction(const std::vector<User>& users, UTXOPool& 
 void initializeUTXOPool(const std::vector<User>& users, UTXOPool& utxoPool) {
     for (const auto& user : users) {
         // Naudojame pradini user balansa
-        double userBalance = user.balance;
+        double userBalance = user.getBalance();
 
         // Sukuriam UTXO ID hashinant user public key ir "initial" zodi
-        std::string utxoID = generateCustomHash(user.publicKey + "_initial");
+        std::string utxoID = generateCustomHash(user.getPublicKey() + "_initial");
 
         // Pridedam sukurta UTXO i pool'a
-        utxoPool.utxos[utxoID] = {user.publicKey, userBalance};
+        utxoPool.utxos[utxoID] = {user.getPublicKey(), userBalance};
     }
 }
 
