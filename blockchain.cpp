@@ -2,9 +2,17 @@
 #include <ctime>
 #include <iostream>
 #include <chrono>
+#include <random>
 
 
 std::mutex mtx;
+
+Blockchain::Blockchain(int difficulty) : difficulty(difficulty) {
+    Block genesisBlock = createBlock({}, "0");
+    mineBlock(genesisBlock);
+    addBlock(genesisBlock);
+    std::cout << "Genesis block created with hash: " << genesisBlock.getHash() << std::endl;
+}
 
 void Blockchain::getBlock(int index){
     if(index < chain.size()){
@@ -14,17 +22,14 @@ void Blockchain::getBlock(int index){
         std::cout << "Merkle Root: " << chain[index].getMerkleRoot() << "\n";
         std::cout << "Transactions:\n";
         chain[index].displayBlockTransactions();
-        //std::cout << "===================================================\n" << std::endl;
     }
     else std::cout << "Block with index " << index << " does not exist!" << std::endl;
 }
 
 unsigned long long Blockchain::getTransactionCount(int index) const {
-    if(index < chain.size()){
-        return chain[index].transactionCount();
-    }
-    else return 0;
+    return index < chain.size() ? chain[index].transactionCount() : 0;
 }
+
 Block& Blockchain::getLastBlock() {
     return chain.back();
 }
@@ -65,7 +70,7 @@ std::string Block::getPreviousHash() const {
 void selectRandomTransactions(const std::vector<Transaction>& transactionPool, std::vector<Transaction>& selectedTransactions) {
     selectedTransactions.clear();
     std::vector<Transaction> tempPool = transactionPool;
-    std::random_shuffle(tempPool.begin(), tempPool.end());
+    std::shuffle(tempPool.begin(), tempPool.end(), std::mt19937(std::random_device()()));
     int numTransactions = std::min(100, static_cast<int>(tempPool.size()));
     selectedTransactions.insert(selectedTransactions.end(), tempPool.begin(), tempPool.begin() + numTransactions);
 }
@@ -97,18 +102,30 @@ void Blockchain::parallelMineBlocks(std::vector<Block>& candidateBlocks) {
     }
 }
 void Blockchain::processTransactions(std::vector<Transaction>& transactions) {
-    while (!transactions.empty()) {
-        std::vector<Transaction> selectedTransactions;
-        selectRandomTransactions(transactions, selectedTransactions);
+    std::vector<Transaction> selectedTransactions;
+    selectRandomTransactions(transactions, selectedTransactions);
 
-        Block block = createBlock(selectedTransactions, getLastBlockHash());
+    std::vector<Transaction> validTransactions;
+
+    for (auto& tx : selectedTransactions) {
+        if (utxoPool.validateTransaction(tx)) {
+            validTransactions.push_back(tx); // Add valid transactions to pool for future block creation
+            std::cout << "Transaction " << tx.getTxID() << " validated successfully.\n";
+        } else {
+            std::cout << "Invalid transaction with ID: " << tx.getTxID() << " was ignored.\n";
+        }
+    }
+
+    if (!validTransactions.empty()) {
+        Block block = createBlock(validTransactions, getLastBlockHash());
         mineBlock(block);
         addBlock(block);
 
-        //block.displayBlockTransactions();
-
-        transactions.erase(transactions.begin(), transactions.begin() + selectedTransactions.size());
-        std::cout << transactions.size() << " transactions remaining in the pool." << std::endl;
+        for (const auto& tx : validTransactions) {
+            utxoPool.applyTransaction(tx);
+        }
+        std::cout << "Block with " << validTransactions.size() << " transactions mined and added to blockchain.\n";
+    } else {
+        std::cout << "No valid transactions for this block, skipping block creation.\n";
     }
-    std::cout << "All transactions have been processed and added to the blockchain." << std::endl;
 }

@@ -40,6 +40,8 @@ public:
     void applyTransaction(const Transaction& tx);
     std::vector<std::pair<std::string, double>> getUTXOsForOwner(const std::string& owner) const;
     double calculateBalance(const std::string& publicKey) const;
+    void displayUTXOs() const;
+    bool hasUTXO(const std::string& utxoID) const;
 private:
     std::unordered_map<std::string, std::pair<std::string, double>> utxos;
 };

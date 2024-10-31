@@ -61,8 +61,9 @@ int main() {
                 for (int i = 0; i < userNumber; ++i) {
                     User user;
                     users.push_back(user);
-                    utxoPool.addInitialUTXO(user, (std::rand() % 99999) / 100.0 + 1.0); // Pradinis UTXO useriui vietoj atskiro balanso
-                    user.display(utxoPool);
+                    double initialBalance = (std::rand() % 999901) + 100;
+                    utxoPool.addInitialUTXO(user, initialBalance);
+                    std::cout << "Added initial UTXO for user: " << user.getPublicKey() << " with balance: " << initialBalance << "\n";
                 }
                 std::cout << userNumber << " users have been generated.\n";
                 std::cout << "Total number of users: " << users.size() << std::endl;
@@ -88,8 +89,7 @@ int main() {
                 break;
             }
             case 3: {
-                int initialTransactions = transactions.size();
-                if(users.empty()){
+                if (users.empty()) {
                     std::cout << "Error: No users available to generate transactions.\n";
                     break;
                 }
@@ -98,21 +98,31 @@ int main() {
                 std::cin >> tranCount;
                 std::cin.ignore();
 
+                int initialTransactionCount = transactions.size();
                 auto start = std::chrono::high_resolution_clock::now();
-                generateTransactions(tranCount, users, utxoPool, transactions);
+
+                for (int i = 0; i < tranCount; ++i) {
+                    Transaction tx = generateRandomTransaction(users, utxoPool);
+                    if (utxoPool.validateTransaction(tx)) {
+                        transactions.push_back(tx); // Only add valid transactions
+                        std::cout << "Transaction " << tx.getTxID() << " generated and added to the pool.\n";
+                    } else {
+                        std::cout << "Generated an invalid transaction (ID: " << tx.getTxID() << "), skipping.\n";
+                    }
+                }
+
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> duration = end - start;
 
-                std::cout << tranCount << " transactions have been generated.\n";
-                std::cout << "Time taken to generate " << tranCount << " transactions: " << duration.count() << " sec\n";
-                std::cout << "Total number of valid transactions added this generation: " << transactions.size() - initialTransactions << std::endl;
-                std::cout << "Total number of transactions: " << transactions.size() << std::endl;
+                std::cout << tranCount << " transactions processed.\n";
+                std::cout << "Time taken to generate transactions: " << duration.count() << " sec\n";
+                std::cout << "Total number of valid transactions added: " << transactions.size() - initialTransactionCount << std::endl;
                 break;
             }
 
-            case 4: {  // Display transactions in pool
+            case 4: {
                 if (transactions.empty()) {
-                    std::cout << "Error: No  transactions available to display.\n";
+                    std::cout << "Error: No transactions available to display.\n";
                     break;
                 }
                 displayAllTransactions(transactions);
@@ -120,7 +130,7 @@ int main() {
             }
 
             case 5: {
-                if(transactions.empty()){
+                if (transactions.empty()) {
                     std::cout << "Error: No transactions available to mine.\n";
                     break;
                 }
@@ -129,11 +139,10 @@ int main() {
                 blockchain.processTransactions(transactions);
                 std::cout << "Block mined and added to the blockchain.\n";
                 std::cout << "===================================================\n";
-                //blockchain.displayBlockchain();
                 break;
             }
             case 6: {
-                if(blockchain.isEmpty()){
+                if (blockchain.isEmpty()) {
                     std::cout << "Error: No block available to display.\n";
                     break;
                 }
@@ -141,16 +150,15 @@ int main() {
                 int blockNumber;
                 std::cin >> blockNumber;
                 std::cin.ignore();
-                if(blockNumber < 0 || blockNumber > blockchain.size()){
+                if (blockNumber > 0 && blockNumber <= blockchain.size()) {
+                    blockchain.getBlock(blockNumber - 1);
+                } else {
                     std::cout << "Error: Invalid block number.\n";
-                    break;
                 }
-                blockchain.getBlock(blockNumber-1);
                 break;
             }
             case 7: {
-                int transactionNumber;
-                if(blockchain.isEmpty()){
+                if (blockchain.isEmpty()) {
                     std::cout << "Error: No block available to display.\n";
                     break;
                 }
@@ -158,41 +166,35 @@ int main() {
                 int blockNumber;
                 std::cin >> blockNumber;
                 std::cin.ignore();
-                if(blockNumber < 0 || blockNumber > blockchain.size()){
+                if (blockNumber > 0 && blockNumber <= blockchain.size()) {
+                    int transactionNumber;
+                    std::cout << "There are " << blockchain.getTransactionCount(blockNumber - 1) << " transactions in the block.\n";
+                    std::cout << "Enter the transaction number to display: ";
+                    std::cin >> transactionNumber;
+                    std::cin.ignore();
+                    if (transactionNumber > 0 && transactionNumber <= blockchain.getTransactionCount(blockNumber - 1)) {
+                        blockchain.displaySpecificTransaction(blockNumber - 1, transactionNumber - 1);
+                    } else {
+                        std::cout << "Error: Invalid transaction number.\n";
+                    }
+                } else {
                     std::cout << "Error: Invalid block number.\n";
-                    break;
-                }
-                std::cout << "There are a total of " << blockchain.getTransactionCount(blockNumber - 1) << " transactions in the block.\n";
-                std::cout << "Enter the number of the transaction to display in the block: ";
-                std::cin >> transactionNumber;
-                std::cin.ignore();
-                if(transactionNumber < 0 || transactionNumber > blockchain.getTransactionCount(blockNumber - 1)){
-                    std::cout << "Error: Invalid transaction number.\n";
-                    break;
-                }else{
-                    blockchain.displaySpecificTransaction(blockNumber-1, transactionNumber-1);
                 }
                 break;
             }
             case 8: {
-                if(blockchain.isEmpty()){
+                if (blockchain.isEmpty()) {
                     std::cout << "Error: No block available to display.\n";
                     break;
                 }
-                if (!blockchain.getLastBlock().transactions.empty()) {
-                    std::cout << "Displaying transactions in the most recent block:\n";
-                    blockchain.getBlock(blockchain.size()-1);
-                } else {
-                    std::cout << "No block transactions to display.\n";
-                }
+                blockchain.getBlock(blockchain.size() - 1);
                 break;
             }
-            case 9: {  // Display entire blockchain
-                if(blockchain.isEmpty()){
+            case 9: {
+                if (blockchain.isEmpty()) {
                     std::cout << "Error: No blockchain available to display.\n";
                     break;
                 }
-                std::cout << "Displaying blockchain:\n";
                 blockchain.displayBlockchain();
                 break;
             }

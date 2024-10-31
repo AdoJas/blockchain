@@ -17,7 +17,7 @@ private:
     int difficulty;
 
 public:
-    Blockchain(int difficultyLevel) : difficulty(difficultyLevel) {};
+    Blockchain(int difficultyLevel);
 
     Block& getLastBlock();
     Block createBlock(const std::vector<Transaction>& transactions, const std::string& prevHash);
@@ -27,6 +27,7 @@ public:
     void displaySpecificTransaction(int blockIndex, int transactionIndex);
     void displayBlockchain() const;
     void mineBlock(Block& block);
+
     void parallelMineBlocks(std::vector<Block>& candidateBlocks);
     void processTransactions(std::vector<Transaction>& transactions);
     std::string getLastBlockHash() const;
