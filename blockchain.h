@@ -21,7 +21,13 @@ public:
     void addBlock(Block block);
     Block createBlock(const std::vector<Transaction>& transactions, const std::string& prevHash);
     std::string getLastBlockHash() const;
-
+    unsigned long long getTransactionCount(int index) const;
+    Block& getLastBlock();
+    void displayBlockchain() const;
+    bool isEmpty() const;
+    void getBlock(int index);
+    void displaySpecificTransaction(int blockIndex, int transactionIndex);
+    unsigned long long size() const { return chain.size(); };
     void mineBlock(Block& block);
     void parallelMineBlocks(std::vector<Block>& candidateBlocks);
     void processTransactions(std::vector<Transaction>& transactions);

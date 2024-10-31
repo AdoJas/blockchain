@@ -5,23 +5,32 @@
 
 void displayTransaction(const Transaction& tx) {
     std::cout << "==================== Transaction ====================" << std::endl;
-    std::cout << "Transaction ID : " << tx.txID << std::endl;
-    std::cout << "Sender         : " << tx.sender << std::endl;
-    std::cout << "Receiver       : " << tx.receiver << std::endl;
-    std::cout << "Amount         : " << tx.amount << std::endl;
+    std::cout << "Transaction ID    : " << tx.txID << std::endl;
+    std::cout << "SenderPublicKey   : " << tx.sender << std::endl;
+    std::cout << "ReceiverPublicKey : " << tx.receiver << std::endl;
+    std::cout << "Amount            : " << tx.amount << std::endl;
 
-    std::cout << "Inputs         : ";
+    std::cout << "Inputs            : ";
     for (const auto& input : tx.inputs) std::cout << input << " ";
-    std::cout << "\nOutputs        : ";
-    for (const auto& output : tx.outputs) std::cout << output << " ";
-    std::cout << "\n=====================================================" << std::endl;
+    std::cout << "\nOutputs           : ";
+    for (const auto& output : tx.outputs) {
+        size_t delimiterPos = output.find(':');
+        if (delimiterPos != std::string::npos) {
+            std::string recipient = output.substr(0, delimiterPos);
+            double amount = std::stod(output.substr(delimiterPos + 1));
+            if (recipient == tx.sender) {
+            std::cout << "Change to Sender: " << recipient << ", Amount: " << amount << std::endl;
+            }
+        }
+    }
+
 }
 
 void transactionGeneration(int tranCount, const std::vector<User>& users, UTXOPool& utxoPool, std::vector<Transaction>& transactions) {
-    if (users.size() < 2) {
-        std::cerr << "Error: Not enough users to generate transactions." << std::endl;
-        return;
-    }
+//    if (users.size() < 2) {
+//        std::cerr << "Error: Not enough users to generate transactions." << std::endl;
+//        return;
+//    }
 
     for (int i = 0; i < tranCount; ++i) {
         Transaction tx;
@@ -34,6 +43,7 @@ void transactionGeneration(int tranCount, const std::vector<User>& users, UTXOPo
         if (!tx.inputs.empty() && !tx.outputs.empty()) {
             transactions.push_back(tx);
         }
+        //displayTransaction(tx);
     }
 }
 
@@ -132,6 +142,7 @@ void UTXOPool::applyTransaction(const Transaction& tx) {
         utxos.erase(input);
     }
 
+    int outputIndex = 0;
     // Pridedam naujus UTXO
     for (const auto& output : tx.outputs) {
         size_t delimiterPos = output.find(':');
@@ -139,10 +150,11 @@ void UTXOPool::applyTransaction(const Transaction& tx) {
             std::string recipient = output.substr(0, delimiterPos);
             double amount = std::stod(output.substr(delimiterPos + 1));
 
-            // Nauji unukalus UTXO id hashinant txID ir recipient.
-            std::string rawUTXOID = tx.txID + "_" + recipient;
+            // Nauji unukalus UTXO id hashinant txID ir output indexu.
+            std::string rawUTXOID = tx.txID + "_" + std::to_string(outputIndex++);
             std::string newUTXOID = generateCustomHash(rawUTXOID);
 
+            // Pridedam nauja UTXO i utxoPoola
             utxos[newUTXOID] = {recipient, amount};
         }
     }

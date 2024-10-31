@@ -49,9 +49,11 @@ User generateRandomUser() {
     return user;
 }
 User printData(User user) {
+    std::cout << std::endl;
+    std::cout << "=================================== User ===================================" << std::endl;
     std::cout << "Name: " << user.name << std::endl;
     std::cout << "Public key: " << user.publicKey << std::endl;
     std::cout << "Balance: " << user.balance << std::endl;
-    std::cout << "-----------------------" << std::endl;
+    std::cout << "============================================================================" << std::endl;
     return user;
 }
