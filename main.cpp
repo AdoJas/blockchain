@@ -6,6 +6,8 @@
 #include "block.h"
 #include "blockchain.h"
 
+
+//TODO: implementuoti gerasias oop praktikas, RAII ir tt. pakeisti User struktura i klase, sutvarkyti readME.md faila, kintamuju vardus
 void displayAllTransactions(const std::vector<Transaction>& transactions) {
     std::cout << "==================== Transactions ====================\n";
     for (const auto& tx : transactions) {
