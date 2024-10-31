@@ -155,7 +155,6 @@ int main() {
                     std::cout << "Error: Invalid block number.\n";
                     break;
                 }
-                //TODO: Sutvarkyti errora su transakciju skaiciaus nebuvimu!!!!!
                 std::cout << "There are a total of " << blockchain.getTransactionCount(blockNumber - 1) << " transactions in the block.\n";
                 std::cout << "Enter the number of the transaction to display in the block: ";
                 std::cin >> transactionNumber;
