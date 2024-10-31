@@ -58,8 +58,12 @@ int main() {
                 int userNumber;
                 std::cin >> userNumber;
                 std::cin.ignore();
-                randomUserGeneration(userNumber, users);
-                UTXOPool::initializePool(users, utxoPool);
+                for (int i = 0; i < userNumber; ++i) {
+                    User user;
+                    users.push_back(user);
+                    utxoPool.addInitialUTXO(user, (std::rand() % 99999) / 100.0 + 1.0); // Pradinis UTXO useriui vietoj atskiro balanso
+                    user.display(utxoPool);
+                }
                 std::cout << userNumber << " users have been generated.\n";
                 std::cout << "Total number of users: " << users.size() << std::endl;
                 break;
@@ -76,14 +80,15 @@ int main() {
                 std::cin.ignore();
                 if(userNumber == 0){
                     for(const auto & user : users){
-                        user.display();
+                        user.display(utxoPool);
                     }
                     break;
                 }
-                users[userNumber-1].display();
+                users[userNumber-1].display(utxoPool);
                 break;
             }
             case 3: {
+                int initialTransactions = transactions.size();
                 if(users.empty()){
                     std::cout << "Error: No users available to generate transactions.\n";
                     break;
@@ -100,6 +105,7 @@ int main() {
 
                 std::cout << tranCount << " transactions have been generated.\n";
                 std::cout << "Time taken to generate " << tranCount << " transactions: " << duration.count() << " sec\n";
+                std::cout << "Total number of valid transactions added this generation: " << transactions.size() - initialTransactions << std::endl;
                 std::cout << "Total number of transactions: " << transactions.size() << std::endl;
                 break;
             }

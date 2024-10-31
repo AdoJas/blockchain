@@ -3,9 +3,11 @@
 
 #include <string>
 #include <vector>
-#include "user.h"
+//#include "user.h"
 #include <iostream>
 #include <unordered_map>
+
+class User;
 
 class Transaction {
 public:
@@ -32,18 +34,16 @@ void displayTransaction(const Transaction& tx);
 
 class UTXOPool {
 public:
+    void addInitialUTXO(const User& user, double initialBalance);
     bool validateTransaction(const Transaction& tx) const;
-    bool hasSufficientBalance(const std::string& owner, double amount) const;
-    static bool verifyTransactionHash(const Transaction& tx);
+//    bool hasSufficientBalance(const std::string& owner, double amount) const;
     void applyTransaction(const Transaction& tx);
-    static void initializePool(const std::vector<User>& users, UTXOPool& utxoPool);
     std::vector<std::pair<std::string, double>> getUTXOsForOwner(const std::string& owner) const;
-
+    double calculateBalance(const std::string& publicKey) const;
 private:
     std::unordered_map<std::string, std::pair<std::string, double>> utxos;
 };
 
 Transaction generateRandomTransaction(const std::vector<User>& users, UTXOPool& utxoPool);
 void generateTransactions(int tranCount, const std::vector<User>& users, UTXOPool& utxoPool, std::vector<Transaction>& transactions);
-
 #endif // BLOCKCHAIN_TRANSACTIONUTXO_H

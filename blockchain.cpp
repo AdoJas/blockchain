@@ -30,6 +30,7 @@ Block& Blockchain::getLastBlock() {
 }
 bool Blockchain::isEmpty() const {
     if(chain.empty()) return true;
+    else return false;
 }
 void Blockchain::displayBlockchain() const {
     std::cout << "==================== Blockchain ====================\n";

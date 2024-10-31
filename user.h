@@ -10,10 +10,9 @@
 #include <iomanip>
 #include <unordered_set>
 #include <iostream>
+#include "transactionUTXO.h"
 
-extern std::unordered_set<std::string> existingPublicKeys;
-
-std::string generateRandomPublicKey();
+class UTXOPool;
 
 class User {
 public: User();
@@ -21,7 +20,7 @@ public: User();
 
     std::string getName() const;
     std::string getPublicKey() const;
-    void display() const;
+    void display(const UTXOPool& utxoPool) const;
 
 private:
     std::string name;
@@ -30,8 +29,4 @@ private:
 
     static std::string generateRandomPublicKey();
 };
-
-User generateRandomUser();
-User printData(User user);
-void randomUserGeneration(int userNumber, std::vector<User>& users);
 #endif //BLOCKCHAIN_USER_H
