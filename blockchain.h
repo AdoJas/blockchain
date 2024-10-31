@@ -18,19 +18,21 @@ private:
 
 public:
     Blockchain(int difficultyLevel) : difficulty(difficultyLevel) {};
-    void addBlock(Block block);
-    Block createBlock(const std::vector<Transaction>& transactions, const std::string& prevHash);
-    std::string getLastBlockHash() const;
-    unsigned long long getTransactionCount(int index) const;
+
     Block& getLastBlock();
-    void displayBlockchain() const;
-    bool isEmpty() const;
+    Block createBlock(const std::vector<Transaction>& transactions, const std::string& prevHash);
+
+    void addBlock(Block block);
     void getBlock(int index);
     void displaySpecificTransaction(int blockIndex, int transactionIndex);
-    unsigned long long size() const { return chain.size(); };
+    void displayBlockchain() const;
     void mineBlock(Block& block);
     void parallelMineBlocks(std::vector<Block>& candidateBlocks);
     void processTransactions(std::vector<Transaction>& transactions);
+    std::string getLastBlockHash() const;
+    unsigned long long getTransactionCount(int index) const;
+    unsigned long long size() const { return chain.size(); };
+    bool isEmpty() const;
 };
 
 #endif // BLOCKCHAIN_BLOCKCHAIN_H
