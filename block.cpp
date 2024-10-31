@@ -11,7 +11,7 @@ Block::Block(std::string previousHash, const std::vector<Transaction>& transacti
 
     std::vector<std::string> transactionIDs;
     for (const auto& tx : transactions) {
-        transactionIDs.push_back(tx.txID);
+        transactionIDs.push_back(tx.getTxID());
     }
 
     merkleRoot = calculateMerkleRoot(transactionIDs);

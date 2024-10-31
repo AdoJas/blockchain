@@ -59,7 +59,7 @@ int main() {
                 std::cin >> userNumber;
                 std::cin.ignore();
                 randomUserGeneration(userNumber, users);
-                initializeUTXOPool(users, utxoPool);
+                UTXOPool::initializePool(users, utxoPool);
                 std::cout << userNumber << " users have been generated.\n";
                 std::cout << "Total number of users: " << users.size() << std::endl;
                 break;
@@ -94,7 +94,7 @@ int main() {
                 std::cin.ignore();
 
                 auto start = std::chrono::high_resolution_clock::now();
-                transactionGeneration(tranCount, users, utxoPool, transactions);
+                generateTransactions(tranCount, users, utxoPool, transactions);
                 auto end = std::chrono::high_resolution_clock::now();
                 std::chrono::duration<double> duration = end - start;
 

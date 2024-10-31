@@ -3,159 +3,118 @@
 #include "user.h"
 #include "hash.h"
 
+Transaction::Transaction(const std::string& txID, const std::string& sender, const std::string& receiver, double amount)
+        : txID(txID), sender(sender), receiver(receiver), amount(amount) {}
+
+std::string Transaction::getTxID() const { return txID; }
+std::string Transaction::getSender() const { return sender; }
+std::string Transaction::getReceiver() const { return receiver; }
+double Transaction::getAmount() const { return amount; }
+const std::vector<std::string>& Transaction::getInputs() const { return inputs; }
+const std::vector<std::string>& Transaction::getOutputs() const { return outputs; }
+
+void Transaction::addInput(const std::string& input) { inputs.push_back(input); }
+void Transaction::addOutput(const std::string& output) { outputs.push_back(output); }
+
 void displayTransaction(const Transaction& tx) {
-    std::cout << "==================== Transaction ====================" << std::endl;
-    std::cout << "Transaction ID    : " << tx.txID << std::endl;
-    std::cout << "SenderPublicKey   : " << tx.sender << std::endl;
-    std::cout << "ReceiverPublicKey : " << tx.receiver << std::endl;
-    std::cout << "Amount            : " << tx.amount << std::endl;
-
+    std::cout << "==================== Transaction ====================\n";
+    std::cout << "Transaction ID    : " << tx.getTxID() << "\n";
+    std::cout << "SenderPublicKey   : " << tx.getSender() << "\n";
+    std::cout << "ReceiverPublicKey : " << tx.getReceiver() << "\n";
+    std::cout << "Amount            : " << tx.getAmount() << "\n";
     std::cout << "Inputs            : ";
-    for (const auto& input : tx.inputs) std::cout << input << " ";
+    for (const auto& input : tx.getInputs()) std::cout << input << " ";
     std::cout << "\nOutputs           : ";
-    for (const auto& output : tx.outputs) {
-        size_t delimiterPos = output.find(':');
-        if (delimiterPos != std::string::npos) {
-            std::string recipient = output.substr(0, delimiterPos);
-            double amount = std::stod(output.substr(delimiterPos + 1));
-            if (recipient == tx.sender) {
-            std::cout << "Change to Sender: " << recipient << ", Amount: " << amount << std::endl;
-            }
-        }
-    }
-
+    for (const auto& output : tx.getOutputs()) std::cout << output << " ";
+    std::cout << "\n====================================================\n";
 }
 
-void transactionGeneration(int tranCount, const std::vector<User>& users, UTXOPool& utxoPool, std::vector<Transaction>& transactions) {
-//    if (users.size() < 2) {
-//        std::cerr << "Error: Not enough users to generate transactions." << std::endl;
-//        return;
-//    }
-
+void generateTransactions(int tranCount, const std::vector<User>& users, UTXOPool& utxoPool, std::vector<Transaction>& transactions) {
     for (int i = 0; i < tranCount; ++i) {
-        Transaction tx;
-        int attempts = 0;
-        do {
-            tx = generateRandomTransaction(users, utxoPool);
-            attempts++;
-        } while ((tx.inputs.empty() || tx.outputs.empty()) && attempts < 5);
-
-        if (!tx.inputs.empty() && !tx.outputs.empty()) {
+        Transaction tx = generateRandomTransaction(users, utxoPool);
+        if (!tx.getInputs().empty() && !tx.getOutputs().empty()) {
             transactions.push_back(tx);
         }
-        //displayTransaction(tx);
     }
+}
+std::vector<std::pair<std::string, double>> UTXOPool::getUTXOsForOwner(const std::string& owner) const {
+    std::vector<std::pair<std::string, double>> userUTXOs;
+    for (const auto &[utxoID, utxo]: utxos) {
+        if (utxo.first == owner) {
+            userUTXOs.emplace_back(utxoID, utxo.second);
+        }
+    }
+    return userUTXOs;
 }
 
 Transaction generateRandomTransaction(const std::vector<User>& users, UTXOPool& utxoPool) {
     int senderIndex = std::rand() % users.size();
     int receiverIndex;
-    do {
-        receiverIndex = std::rand() % users.size();
-    } while (receiverIndex == senderIndex);
+    do { receiverIndex = std::rand() % users.size(); } while (receiverIndex == senderIndex);
 
     double amount = (std::rand() % 99999) / 100.0 + 1.0;
-
-    Transaction tx;
-    tx.sender = users[senderIndex].getPublicKey();
-    tx.receiver = users[receiverIndex].getPublicKey();
-    tx.amount = amount;
-
-    std::string txData = tx.sender + tx.receiver + std::to_string(tx.amount);
-    tx.txID = generateCustomHash(txData);
+    std::string txID = generateCustomHash(users[senderIndex].getPublicKey() + users[receiverIndex].getPublicKey() + std::to_string(amount));
+    Transaction tx(txID, users[senderIndex].getPublicKey(), users[receiverIndex].getPublicKey(), amount);
 
     double inputTotal = 0.0;
-    for (const auto& [utxoID, utxo] : utxoPool.utxos) {
-        if (utxo.first == tx.sender && inputTotal < amount) {
-            tx.inputs.push_back(utxoID);
-            inputTotal += utxo.second;
-        }
+    auto userUTXOs = utxoPool.getUTXOsForOwner(tx.getSender());
+
+    for (const auto& [utxoID, utxoValue] : userUTXOs) {
+        if (inputTotal >= amount) break;
+        tx.addInput(utxoID);
+        inputTotal += utxoValue;
     }
 
-    if (inputTotal < amount) {
-        tx.inputs.clear();
-        tx.outputs.clear();
-    } else {
-        tx.outputs.push_back(tx.receiver + ":" + std::to_string(amount));
+    if (inputTotal >= amount) {
+        tx.addOutput(tx.getReceiver() + ":" + std::to_string(amount));
         if (inputTotal > amount) {
-            double change = inputTotal - amount;
-            tx.outputs.push_back(tx.sender + ":" + std::to_string(change));
+            tx.addOutput(tx.getSender() + ":" + std::to_string(inputTotal - amount));
         }
     }
 
     return tx;
 }
-
-void initializeUTXOPool(const std::vector<User>& users, UTXOPool& utxoPool) {
+void UTXOPool::initializePool(const std::vector<User>& users, UTXOPool& utxoPool) {
     for (const auto& user : users) {
-        // Naudojame pradini user balansa
         double userBalance = user.getBalance();
-
-        // Sukuriam UTXO ID hashinant user public key ir "initial" zodi
         std::string utxoID = generateCustomHash(user.getPublicKey() + "_initial");
-
-        // Pridedam sukurta UTXO i pool'a
         utxoPool.utxos[utxoID] = {user.getPublicKey(), userBalance};
     }
 }
 
-bool UTXOPool::validateTransaction(const Transaction& tx) {
+bool UTXOPool::validateTransaction(const Transaction& tx) const {
     double inputTotal = 0.0;
     double outputTotal = 0.0;
 
-    // 1. tikrina ar utxo yra pool'e
-    for (const auto& input : tx.inputs) {
+    for (const auto& input : tx.getInputs()) {
         auto it = utxos.find(input);
-        if (it == utxos.end()) {
-            std::cout << "Invalid transaction: Input UTXO not found in pool." << std::endl;
-            return false;
-        }
-
-        // 2. Nuosavybes patvirtinimas, ar outputas priklauso senderiui
-        if (it->second.first != tx.sender) {
-            std::cout << "Invalid transaction: UTXO ownership does not match sender." << std::endl;
-            return false;
-        }
-
+        if (it == utxos.end() || it->second.first != tx.getSender()) return false;
         inputTotal += it->second.second;
     }
-    // 3. Visas output kiekis
-    for (const auto& output : tx.outputs) {
+
+    for (const auto& output : tx.getOutputs()) {
         size_t delimiterPos = output.find(':');
         if (delimiterPos != std::string::npos) {
-            double outputAmount = std::stod(output.substr(delimiterPos + 1));
-            outputTotal += outputAmount;
+            outputTotal += std::stod(output.substr(delimiterPos + 1));
         }
     }
 
-    // 4. inputas didesnis nei outputas
-    if (inputTotal < outputTotal) {
-        std::cout << "Invalid transaction: Insufficient input balance." << std::endl;
-        return false;
-    }
-    //displayTransaction(tx);
-    return true;
+    return inputTotal >= outputTotal;
 }
 
 void UTXOPool::applyTransaction(const Transaction& tx) {
-    for (const auto& input : tx.inputs) {
+    for (const auto& input : tx.getInputs()) {
         utxos.erase(input);
     }
 
     int outputIndex = 0;
-    // Pridedam naujus UTXO
-    for (const auto& output : tx.outputs) {
+    for (const auto& output : tx.getOutputs()) {
         size_t delimiterPos = output.find(':');
         if (delimiterPos != std::string::npos) {
             std::string recipient = output.substr(0, delimiterPos);
             double amount = std::stod(output.substr(delimiterPos + 1));
-
-            // Nauji unukalus UTXO id hashinant txID ir output indexu.
-            std::string rawUTXOID = tx.txID + "_" + std::to_string(outputIndex++);
-            std::string newUTXOID = generateCustomHash(rawUTXOID);
-
-            // Pridedam nauja UTXO i utxoPoola
-            utxos[newUTXOID] = {recipient, amount};
+            std::string rawUTXOID = tx.getTxID() + "_" + std::to_string(outputIndex++);
+            utxos[generateCustomHash(rawUTXOID)] = {recipient, amount};
         }
     }
 }

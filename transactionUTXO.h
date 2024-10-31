@@ -7,32 +7,40 @@
 #include <iostream>
 #include <unordered_map>
 
-struct Transaction {
+class Transaction {
+public:
+    Transaction(const std::string& txID, const std::string& sender, const std::string& receiver, double amount);
+    std::string getTxID() const;
+    std::string getSender() const;
+    std::string getReceiver() const;
+    double getAmount() const;
+    const std::vector<std::string>& getInputs() const;
+    const std::vector<std::string>& getOutputs() const;
+    void addInput(const std::string& input);
+    void addOutput(const std::string& output);
+
+private:
     std::string txID;
     std::string sender;
     std::string receiver;
     double amount;
-    std::vector<std::string> inputs;   // Buvusiu UTXO ID
-    std::vector<std::string> outputs;  // Nauji UTXO ID
+    std::vector<std::string> inputs;
+    std::vector<std::string> outputs;
 };
 
 void displayTransaction(const Transaction& tx);
 
-
 class UTXOPool {
 public:
-    std::unordered_map<std::string, std::pair<std::string, double>> utxos; // Priskiriam UTXO ID - (savininkas, suma)
-
-    bool validateTransaction(const Transaction& tx);
+    bool validateTransaction(const Transaction& tx) const;
     void applyTransaction(const Transaction& tx);
-
+    static void initializePool(const std::vector<User>& users, UTXOPool& utxoPool);
+    std::vector<std::pair<std::string, double>> getUTXOsForOwner(const std::string& owner) const;
+private:
+    std::unordered_map<std::string, std::pair<std::string, double>> utxos;
 };
 
-void initializeUTXOPool(const std::vector<User>& users, UTXOPool& utxoPool);
-// Generuojam random pervedimus
 Transaction generateRandomTransaction(const std::vector<User>& users, UTXOPool& utxoPool);
-
-// Bulk set transakcijos
-void transactionGeneration(int tranCount, const std::vector<User>& users, UTXOPool& utxoPool, std::vector<Transaction>& transactions);
+void generateTransactions(int tranCount, const std::vector<User>& users, UTXOPool& utxoPool, std::vector<Transaction>& transactions);
 
 #endif // BLOCKCHAIN_TRANSACTIONUTXO_H
