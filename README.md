@@ -5,7 +5,7 @@
 Šios užduoties tikslas – sukurti supaprastintą blokų grandinę (angl. blockchain), kurios duomenų sluoksnio struktūra pavaizduota
 žemiau:
 
-/////Ideti screenshota/////
+![image](https://github.com/user-attachments/assets/2b62b694-0106-4ef4-9104-8e16831471b1)
 
 ## KAS BUVO ĮGYVENDINTA
 
