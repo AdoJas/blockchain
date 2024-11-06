@@ -10,7 +10,7 @@
 
 class Blockchain {
 private:
-    static const int DIFFICULTY = 4; // Kasimo sunkumas, siam pavyzdziui jis mazas, tik keturi nuliai pradzioje
+    static const int DIFFICULTY = 5; // Kasimo sunkumas siam pavyzdziui
     std::vector<Block> chain; // Blockchainas
     std::map<std::string, std::vector<UTXO>> utxoPool;  // UTXO poolas pagal public key
     std::vector<Transaction> pendingTransactions;

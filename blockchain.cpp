@@ -246,11 +246,9 @@ void Blockchain::addBlock() {
         return;
     }
 
-    static std::random_device rd;
-    static std::mt19937 generator(rd());
-    std::shuffle(pendingTransactions.begin(), pendingTransactions.end(), generator); // Sumaisom pending transakcijas
+    std::string prevHash = chain.back().getHash();
 
-    Block newBlock(chain.back().getHash(), DIFFICULTY);
+    Block newBlock(prevHash, DIFFICULTY, 1);
 
     std::cout << "Preparing to mine a new block...\n";
     newBlock.displayHeader(false);
@@ -266,16 +264,14 @@ void Blockchain::addBlock() {
         }
     }
 
-    // Trinam transakcijas, kurios buvo pridetos i bloka
     pendingTransactions.erase(pendingTransactions.begin(), pendingTransactions.begin() + transactionCount);
 
-    newBlock.mineBlock(); // Kasame bloka
-    chain.push_back(newBlock); // Pridedam bloka i blockchaina
+    newBlock.mineBlock();
+    chain.push_back(newBlock);
 
     std::cout << "Successfully mined a new block with " << successfulTransactions << " transactions.\n";
 
     newBlock.displayHeader(true);
-
 }
 //Funkcija, kuri grazina blockchaina
 const std::vector<Block>& Blockchain::getChain() const {

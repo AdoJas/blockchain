@@ -14,7 +14,7 @@ private:
     std::string timestamp;           // Bloko kurimo laikas
     int difficulty;                  // Bloko kasybos sunkumas
     std::vector<Transaction> transactions;  // Transactions within this block
-    std::string difficultyTarget;
+    std::string blockHash;           // Bloko hashas
 
 public:
     Block(const std::string& prevHash, int diff, int ver = 1);

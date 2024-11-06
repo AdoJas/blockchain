@@ -4,15 +4,14 @@
 #include <sstream>
 #include <iomanip>
 #include <iostream>
+#include <omp.h>
 
-Block::Block(const std::string& prevHash, int diff, int ver) // Bloko konstruktorius, inicializuojant bloka, nustatomas bloko hash, sudaromas merkle root, nustatomas bloko kurimo laikas
+Block::Block(const std::string& prevHash, int diff, int ver) // Bloko konstruktorius
         : version(ver), prevBlockHash(prevHash), difficulty(diff), nonce(0) {
-
     auto now = std::time(nullptr);
     std::ostringstream oss;
     oss << std::put_time(std::localtime(&now), "%Y/%m/%d %H:%M:%S");
     timestamp = oss.str();
-
     calculateMerkleRoot();
 }
 
@@ -21,17 +20,59 @@ std::string Block::calculateHash() const { // Bloko hash skaiciavimas, naudojant
                               std::to_string(nonce) + timestamp + std::to_string(difficulty));
 }
 
-bool Block::mineBlock() { // Bloko kasimas, ieškant tinkamo nonce, kad bloko hash prasidėtų reikiamu kiekiu nuliu
+//bool Block::mineBlock() { // Bloko kasimas, ieškant tinkamo nonce, kad bloko hash prasidėtų reikiamu kiekiu nuliu
+//    std::string target(difficulty, '0');
+//    while (calculateHash().substr(0, difficulty) != target) {
+//        nonce++;
+//    }
+//    return true;
+//}
+bool Block::mineBlock() {
     std::string target(difficulty, '0');
-    while (calculateHash().substr(0, difficulty) != target) {
-        nonce++;
+    bool found = false;                   // Ar blokas iskastas
+    unsigned int successfulNonce = 0;     // Nonce reiksme
+    std::string successfulHash;           // Storinam gera Hasha
+
+#pragma omp parallel
+    {
+        unsigned int localNonce;          // nonce reiksme kiekvienam threadui
+        std::string localHash;            // lokali hasho reiksme kiekvienam threadui
+
+#pragma omp for nowait
+        for (localNonce = 0; localNonce < UINT_MAX; ++localNonce) {
+            if (found) continue;  // Stabdo darba jei jau rado tinkama nonce
+
+            localHash = generateCustomHash(prevBlockHash + merkleRootHash + std::to_string(localNonce) + timestamp);
+
+            if (localHash.substr(0, difficulty) == target) {
+#pragma omp critical
+                {
+                    if (!found) {
+                        found = true;
+                        successfulNonce = localNonce;
+                        successfulHash = localHash;
+                        std::cout << "Block mined by thread " << omp_get_thread_num()
+                                  << " with nonce: " << successfulNonce << "\n";
+                    }
+                }
+            }
+        }
     }
-    return true;
+
+    if (found) {
+        nonce = successfulNonce;
+        blockHash = successfulHash;  // storina gera Hasha
+        std::cout << "Block hash after mining: " << blockHash << "\n";  // Parodo gera Hasha del aiskumo
+        return true;
+    }
+
+    std::cout << "Mining failed: No valid nonce found.\n";
+    return false;
 }
 
 // grazina bloko hash
 std::string Block::getHash() const {
-    return calculateHash();
+    return blockHash;
 }
 
 // Grazina bloko, kuris buvo pries tai, hash
@@ -87,7 +128,7 @@ void Block::calculateMerkleRoot() {
 void Block::displayHeader(bool showCurrentHashAfterMining) const {
     std::cout << "==================== Block Header ====================\n";
     if (showCurrentHashAfterMining) {
-        std::cout << "Current Block Hash : " << calculateHash() << "\n";
+        std::cout << "Current Block Hash : " << blockHash << "\n";  // Use stored blockHash
     }
     std::cout << "Previous Block Hash: " << prevBlockHash << "\n";
     std::cout << "Merkle Root Hash   : " << merkleRootHash << "\n";
